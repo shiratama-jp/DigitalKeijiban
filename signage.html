@@ -72,12 +72,16 @@
     backdrop-filter: blur(6px);
   }
   .qr-block img {
-    width: clamp(52px, 4.2vw, 78px);
-    height: clamp(52px, 4.2vw, 78px);
+    width: clamp(96px, 7.5vw, 148px);
+    height: clamp(96px, 7.5vw, 148px);
     display: block;
     background: #fff;
-    padding: 4px;
+    padding: 6px;
     border-radius: 6px;
+    /* QR の白黒境界がぼけないように補間を無効化 */
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
   }
   .qr-text {
     line-height: 1.2;
