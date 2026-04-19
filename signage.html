@@ -54,11 +54,44 @@
     background: linear-gradient(135deg, var(--blue-700), var(--blue-900));
     color: #fff;
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto auto 1fr auto;
     align-items: center;
-    gap: 24px;
+    gap: clamp(16px, 2vw, 36px);
     padding: 14px 28px;
     box-shadow: var(--shadow-md);
+  }
+
+  .qr-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 14px;
+    backdrop-filter: blur(6px);
+  }
+  .qr-block img {
+    width: clamp(52px, 4.2vw, 78px);
+    height: clamp(52px, 4.2vw, 78px);
+    display: block;
+    background: #fff;
+    padding: 4px;
+    border-radius: 6px;
+  }
+  .qr-text {
+    line-height: 1.2;
+  }
+  .qr-text .lead {
+    font-size: clamp(12px, 1.1vw, 18px);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+  .qr-text .sub {
+    font-size: clamp(10px, 0.85vw, 14px);
+    opacity: 0.75;
+    margin-top: 3px;
+    letter-spacing: 0.03em;
   }
 
   .logo {
@@ -525,6 +558,13 @@
     <div class="logo-text">
       <div class="brand">◯◯◯SYSTEMS</div>
       <div class="site">◯◯工場 お知らせ掲示板</div>
+    </div>
+  </div>
+  <div class="qr-block">
+    <img src="URL_QRCode.png" alt="スマホ版QRコード">
+    <div class="qr-text">
+      <div class="lead">スマホ用はこちら</div>
+      <div class="sub">QRコードをスキャン</div>
     </div>
   </div>
   <div class="date-block">

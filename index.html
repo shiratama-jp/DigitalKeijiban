@@ -62,9 +62,6 @@
     padding: 18px 20px calc(18px + env(safe-area-inset-top));
     padding-top: calc(18px + env(safe-area-inset-top));
     box-shadow: var(--shadow-md);
-    position: sticky;
-    top: 0;
-    z-index: 10;
   }
 
   .app-header .brand {
@@ -90,7 +87,20 @@
   main {
     max-width: 640px;
     margin: 0 auto;
-    padding: 16px 14px 40px;
+    padding: 0 14px 40px;
+  }
+
+  /* 期間タブ + カテゴリフィルタを固定表示 */
+  .subbar {
+    position: sticky;
+    top: 0;
+    z-index: 9;
+    background: var(--bg);
+    padding: 16px 0 4px;
+    margin: 0 -14px;
+    padding-left: 14px;
+    padding-right: 14px;
+    box-shadow: 0 6px 10px -8px rgba(15, 23, 42, 0.12);
   }
 
   .period-tabs {
@@ -407,33 +417,60 @@
     right: 12px;
     max-width: 616px;
     margin: 0 auto;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: var(--shadow-md);
-    padding: 10px 12px;
-    font-size: 13px;
-    align-items: center;
-    gap: 10px;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 2px solid var(--blue-100);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.18);
+    padding: 14px 16px;
     z-index: 50;
+    animation: slideUpBanner 0.3s ease-out;
   }
-  .install-banner.show { display: flex; }
-  .install-banner .msg { flex: 1; color: var(--ink-soft); }
+  @keyframes slideUpBanner {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .install-banner.show { display: block; }
+  .install-banner .head {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--blue-700);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .install-banner .body {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  .install-banner .body strong {
+    color: var(--blue-700);
+    font-weight: 700;
+  }
+  .install-banner .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    justify-content: flex-end;
+  }
   .install-banner button {
     background: var(--blue-600);
     color: #fff;
     border: none;
-    padding: 7px 14px;
-    border-radius: 8px;
+    padding: 9px 22px;
+    border-radius: 999px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     font-family: inherit;
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
   }
   .install-banner .dismiss {
     background: transparent;
     color: var(--ink-mute);
-    padding: 7px 8px;
+    padding: 9px 14px;
+    box-shadow: none;
   }
 </style>
 </head>
@@ -446,26 +483,28 @@
 </header>
 
 <main>
-  <div class="period-tabs" id="periodTabs">
-    <button data-period="current" class="active">
-      今月<span class="count" id="cnt-current">0</span>
-    </button>
-    <button data-period="last">
-      先月<span class="count" id="cnt-last">0</span>
-    </button>
-    <button data-period="older">
-      それ以前<span class="count" id="cnt-older">0</span>
-    </button>
-  </div>
+  <div class="subbar">
+    <div class="period-tabs" id="periodTabs">
+      <button data-period="current" class="active">
+        今月<span class="count" id="cnt-current">0</span>
+      </button>
+      <button data-period="last">
+        先月<span class="count" id="cnt-last">0</span>
+      </button>
+      <button data-period="older">
+        それ以前<span class="count" id="cnt-older">0</span>
+      </button>
+    </div>
 
-  <nav class="filter" id="filter">
-    <button data-cat="all" class="active">すべて</button>
-    <button data-cat="safety">安全</button>
-    <button data-cat="event">イベント</button>
-    <button data-cat="general">総務</button>
-    <button data-cat="people">社内報</button>
-    <button data-cat="notice">お知らせ</button>
-  </nav>
+    <nav class="filter" id="filter">
+      <button data-cat="all" class="active">すべて</button>
+      <button data-cat="safety">安全</button>
+      <button data-cat="event">イベント</button>
+      <button data-cat="general">総務</button>
+      <button data-cat="people">社内報</button>
+      <button data-cat="notice">お知らせ</button>
+    </nav>
+  </div>
 
   <div class="card-list" id="cardList"></div>
 </main>
@@ -482,9 +521,9 @@
 </div>
 
 <div class="install-banner" id="installBanner">
-  <div class="msg">ホーム画面に追加できます</div>
-  <button id="installBtn">追加</button>
-  <button class="dismiss" id="installDismiss">×</button>
+  <div class="head">📲 ホーム画面に追加できます</div>
+  <div class="body" id="installBody"></div>
+  <div class="actions" id="installActions"></div>
 </div>
 
 <script src="articles.js"></script>
@@ -679,32 +718,87 @@
     });
   }
 
-  // --- インストールバナー ---
-  const $banner = document.getElementById('installBanner');
-  const $installBtn = document.getElementById('installBtn');
-  const $installDismiss = document.getElementById('installDismiss');
-  let deferredPrompt = null;
+  // --- インストール案内 ---
+  (function installPrompt() {
+    const $banner = document.getElementById('installBanner');
+    const $body = document.getElementById('installBody');
+    const $actions = document.getElementById('installActions');
+    let deferredPrompt = null;
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (!localStorage.getItem('install-dismissed')) {
+    // すでにPWAとして起動中、またはユーザーが一度閉じていたら出さない
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                      || window.navigator.standalone;
+    if (isStandalone) return;
+    if (localStorage.getItem('install-dismissed')) return;
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    function renderDismiss() {
+      const btn = document.createElement('button');
+      btn.className = 'dismiss';
+      btn.textContent = 'あとで';
+      btn.addEventListener('click', () => {
+        $banner.classList.remove('show');
+        localStorage.setItem('install-dismissed', '1');
+      });
+      return btn;
+    }
+
+    function showIOSGuide() {
+      $body.innerHTML = '画面下の<strong>共有ボタン（□↑）</strong>から<br><strong>「ホーム画面に追加」</strong>をタップしてください';
+      $actions.innerHTML = '';
+      $actions.appendChild(renderDismiss());
       $banner.classList.add('show');
     }
-  });
 
-  $installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    $banner.classList.remove('show');
-  });
+    function showAndroidGuide() {
+      $body.innerHTML = 'ブラウザの<strong>メニュー（⋮）</strong>から<br><strong>「ホーム画面に追加」</strong>を選んでください';
+      $actions.innerHTML = '';
+      $actions.appendChild(renderDismiss());
+      $banner.classList.add('show');
+    }
 
-  $installDismiss.addEventListener('click', () => {
-    $banner.classList.remove('show');
-    localStorage.setItem('install-dismissed', '1');
-  });
+    function showInstallButton() {
+      $body.innerHTML = 'アプリのように起動できて、オフラインでも閲覧できます';
+      $actions.innerHTML = '';
+      const install = document.createElement('button');
+      install.textContent = 'ホーム画面に追加';
+      install.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const result = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if (result.outcome === 'accepted') {
+          $banner.classList.remove('show');
+        }
+      });
+      $actions.appendChild(renderDismiss());
+      $actions.appendChild(install);
+      $banner.classList.add('show');
+    }
+
+    if (isIOS) {
+      // iOS Safari は beforeinstallprompt 非対応 → テキスト案内
+      setTimeout(showIOSGuide, 800);
+    } else {
+      let prompted = false;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        prompted = true;
+        showInstallButton();
+      });
+      // 一定時間たっても prompt が来なかったらテキスト案内にフォールバック
+      setTimeout(() => {
+        if (!prompted) showAndroidGuide();
+      }, 2500);
+    }
+
+    window.addEventListener('appinstalled', () => {
+      $banner.classList.remove('show');
+      localStorage.setItem('install-dismissed', '1');
+    });
+  })();
 </script>
 </body>
 </html>

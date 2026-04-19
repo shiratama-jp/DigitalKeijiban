@@ -1,5 +1,5 @@
 // Digital Keijiban - Service Worker (Network First)
-const CACHE_NAME = 'keijiban-v2';
+const CACHE_NAME = 'keijiban-v3';
 const OFFLINE_ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const OFFLINE_ASSETS = [
   './articles.js',
   './manifest.json',
   './manifest-signage.json',
+  './URL_QRCode.png',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
