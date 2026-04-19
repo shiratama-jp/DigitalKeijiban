@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="お知らせ掲示板">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>◯◯◯システム　お知らせ掲示板</title>
+<style>
+  :root {
+    --blue-900: #1e3a8a;
+    --blue-700: #1d4ed8;
+    --blue-600: #2563eb;
+    --blue-500: #3b82f6;
+    --blue-100: #dbeafe;
+    --blue-50:  #eff6ff;
+    --ink:      #0f172a;
+    --ink-soft: #475569;
+    --ink-mute: #94a3b8;
+    --bg:       #f5f8fd;
+    --card:     #ffffff;
+    --border:   #e2e8f0;
+    --cat-safety: #ea580c;
+    --cat-safety-bg: #fff1e6;
+    --cat-event: #16a34a;
+    --cat-event-bg: #e7f7ec;
+    --cat-general: #0891b2;
+    --cat-general-bg: #e0f5fa;
+    --cat-people: #9333ea;
+    --cat-people-bg: #f3e8ff;
+    --cat-notice: #2563eb;
+    --cat-notice-bg: #e0ecff;
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans",
+                 "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  header.app-header {
+    background: linear-gradient(135deg, var(--blue-600), var(--blue-700));
+    color: #fff;
+    padding: 18px 20px calc(18px + env(safe-area-inset-top));
+    padding-top: calc(18px + env(safe-area-inset-top));
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .app-header .brand {
+    font-size: 12px;
+    opacity: 0.85;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+  }
+
+  .app-header h1 {
+    font-size: 20px;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .app-header .sub {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-top: 4px;
+  }
+
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 16px 14px 40px;
+  }
+
+  .period-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 10px;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+  }
+  .period-tabs button {
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    padding: 9px 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 7px;
+    transition: all 0.15s;
+    font-family: inherit;
+    position: relative;
+  }
+  .period-tabs button.active {
+    background: var(--blue-600);
+    color: #fff;
+  }
+  .period-tabs button .count {
+    display: inline-block;
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.25);
+    color: inherit;
+    padding: 1px 7px;
+    border-radius: 999px;
+    margin-left: 4px;
+    font-weight: 700;
+    min-width: 18px;
+  }
+  .period-tabs button:not(.active) .count {
+    background: var(--blue-100);
+    color: var(--blue-700);
+  }
+  .period-tabs button:not(.active) .count.has-unread {
+    background: var(--blue-600);
+    color: #fff;
+  }
+
+  .filter {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 2px 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .filter::-webkit-scrollbar { display: none; }
+
+  .filter button {
+    flex: 0 0 auto;
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .filter button.active {
+    background: var(--blue-600);
+    border-color: var(--blue-600);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    position: relative;
+    background: var(--card);
+    background-repeat: no-repeat;
+    background-position: right -10px center;
+    background-size: auto 92%;
+    border-radius: 14px;
+    padding: 16px 16px 14px 22px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    overflow: hidden;
+  }
+  .card:active {
+    transform: scale(0.99);
+    box-shadow: var(--shadow-md);
+  }
+
+  .card.pinned {
+    border-color: var(--blue-500);
+    background-color: #fbfcff;
+    background-image: linear-gradient(180deg, var(--blue-50), rgba(255,255,255,0) 60%), var(--sil, none);
+  }
+
+  /* カテゴリ別シルエット背景 */
+  .card.cat-safety  { background-image: var(--sil-safety);  }
+  .card.cat-event   { background-image: var(--sil-event);   }
+  .card.cat-general { background-image: var(--sil-general); }
+  .card.cat-people  { background-image: var(--sil-people);  }
+  .card.cat-notice  { background-image: var(--sil-notice);  }
+
+  .card.pinned.cat-safety  { background-image: linear-gradient(180deg, var(--blue-50), rgba(255,255,255,0) 60%), var(--sil-safety); }
+  .card.pinned.cat-event   { background-image: linear-gradient(180deg, var(--blue-50), rgba(255,255,255,0) 60%), var(--sil-event); }
+  .card.pinned.cat-general { background-image: linear-gradient(180deg, var(--blue-50), rgba(255,255,255,0) 60%), var(--sil-general); }
+  .card.pinned.cat-people  { background-image: linear-gradient(180deg, var(--blue-50), rgba(255,255,255,0) 60%), var(--sil-people); }
+  .card.pinned.cat-notice  { background-image: linear-gradient(180deg, var(--blue-50), rgba(255,255,255,0) 60%), var(--sil-notice); }
+
+  /* 未読: 左に青ドット + タイトル太字 */
+  .card.unread::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 22px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--blue-600);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+  .card.unread h2 {
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .card:not(.unread) h2 {
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+  .card:not(.unread) .excerpt {
+    color: var(--ink-mute);
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.03em;
+  }
+  .tag.safety  { color: var(--cat-safety);  background: var(--cat-safety-bg); }
+  .tag.event   { color: var(--cat-event);   background: var(--cat-event-bg); }
+  .tag.general { color: var(--cat-general); background: var(--cat-general-bg); }
+  .tag.people  { color: var(--cat-people);  background: var(--cat-people-bg); }
+  .tag.notice  { color: var(--cat-notice);  background: var(--cat-notice-bg); }
+
+  .pin-mark {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue-700);
+    background: var(--blue-100);
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-left: 6px;
+  }
+
+  .date {
+    font-size: 12px;
+    color: var(--ink-mute);
+  }
+
+  .card h2 {
+    margin: 4px 0 6px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  .excerpt {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    font-size: 12px;
+    color: var(--ink-mute);
+  }
+  .card-footer .readmore {
+    color: var(--blue-600);
+    font-weight: 600;
+  }
+
+  .empty {
+    text-align: center;
+    color: var(--ink-mute);
+    padding: 40px 20px;
+    font-size: 14px;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: none;
+    align-items: flex-end;
+    z-index: 100;
+    animation: fadeIn 0.15s ease-out;
+  }
+  .modal-backdrop.show { display: flex; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(30px); } to { transform: translateY(0); } }
+
+  .modal {
+    background: #fff;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    max-height: 90vh;
+    border-radius: 18px 18px 0 0;
+    overflow-y: auto;
+    animation: slideUp 0.2s ease-out;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .modal-header {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header .grip {
+    position: absolute;
+    left: 50%;
+    top: 6px;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: #cbd5e1;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 15px;
+    cursor: pointer;
+    padding: 6px 10px;
+    font-family: inherit;
+  }
+
+  .modal-body {
+    padding: 16px 20px 24px;
+  }
+  .modal-body .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .modal-body h2 {
+    font-size: 20px;
+    margin: 6px 0 8px;
+    line-height: 1.4;
+  }
+  .modal-body .author {
+    font-size: 12px;
+    color: var(--ink-mute);
+    margin-bottom: 16px;
+  }
+  .modal-body .body {
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  .install-banner {
+    display: none;
+    position: fixed;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    max-width: 616px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    padding: 10px 12px;
+    font-size: 13px;
+    align-items: center;
+    gap: 10px;
+    z-index: 50;
+  }
+  .install-banner.show { display: flex; }
+  .install-banner .msg { flex: 1; color: var(--ink-soft); }
+  .install-banner button {
+    background: var(--blue-600);
+    color: #fff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .install-banner .dismiss {
+    background: transparent;
+    color: var(--ink-mute);
+    padding: 7px 8px;
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">◯◯◯システム</div>
+  <h1>お知らせ掲示板</h1>
+  <div class="sub" id="today"></div>
+</header>
+
+<main>
+  <div class="period-tabs" id="periodTabs">
+    <button data-period="current" class="active">
+      今月<span class="count" id="cnt-current">0</span>
+    </button>
+    <button data-period="last">
+      先月<span class="count" id="cnt-last">0</span>
+    </button>
+    <button data-period="older">
+      それ以前<span class="count" id="cnt-older">0</span>
+    </button>
+  </div>
+
+  <nav class="filter" id="filter">
+    <button data-cat="all" class="active">すべて</button>
+    <button data-cat="safety">安全</button>
+    <button data-cat="event">イベント</button>
+    <button data-cat="general">総務</button>
+    <button data-cat="people">社内報</button>
+    <button data-cat="notice">お知らせ</button>
+  </nav>
+
+  <div class="card-list" id="cardList"></div>
+</main>
+
+<div class="modal-backdrop" id="modal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <span class="grip"></span>
+      <div></div>
+      <button class="modal-close" id="modalClose">閉じる</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="install-banner" id="installBanner">
+  <div class="msg">ホーム画面に追加できます</div>
+  <button id="installBtn">追加</button>
+  <button class="dismiss" id="installDismiss">×</button>
+</div>
+
+<script src="articles.js"></script>
+<script>
+  injectSilhouettes();
+
+  // --- 表示ロジック ---
+  const $list = document.getElementById('cardList');
+  const $filter = document.getElementById('filter');
+  const $periodTabs = document.getElementById('periodTabs');
+  const $modal = document.getElementById('modal');
+  const $modalBody = document.getElementById('modalBody');
+  const $modalClose = document.getElementById('modalClose');
+  const $today = document.getElementById('today');
+
+  let currentCategory = 'all';
+  let currentPeriod = 'current';
+
+  // --- 既読管理 (localStorage) ---
+  const READ_KEY = 'keijiban-read-v1';
+  const readSet = new Set(
+    (() => {
+      try { return JSON.parse(localStorage.getItem(READ_KEY) || '[]'); }
+      catch { return []; }
+    })()
+  );
+  function isRead(id) { return readSet.has(id); }
+  function markRead(id) {
+    if (readSet.has(id)) return false;
+    readSet.add(id);
+    localStorage.setItem(READ_KEY, JSON.stringify([...readSet]));
+    return true;
+  }
+
+  // --- 期間判定 ---
+  function getPeriod(iso) {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+    if (diff <= 0) return 'current';
+    if (diff === 1) return 'last';
+    return 'older';
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  }
+
+  function formatDateShort(iso) {
+    const d = new Date(iso);
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  }
+
+  function renderToday() {
+    const now = new Date();
+    const weekdays = ['日','月','火','水','木','金','土'];
+    $today.textContent = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} (${weekdays[now.getDay()]}) 更新`;
+  }
+
+  function updatePeriodCounts() {
+    const periods = ['current', 'last', 'older'];
+    periods.forEach(p => {
+      const inPeriod = ARTICLES.filter(a => getPeriod(a.date) === p);
+      const unread = inPeriod.filter(a => !isRead(a.id)).length;
+      const el = document.getElementById(`cnt-${p}`);
+      if (!el) return;
+      if (unread > 0) {
+        el.textContent = unread;
+        el.classList.add('has-unread');
+        el.style.display = '';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+  }
+
+  function render() {
+    updatePeriodCounts();
+
+    const items = ARTICLES
+      .filter(a => getPeriod(a.date) === currentPeriod)
+      .filter(a => currentCategory === 'all' || a.category === currentCategory)
+      .slice()
+      .sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        return b.date.localeCompare(a.date);
+      });
+
+    if (items.length === 0) {
+      const msg = currentPeriod === 'current'
+        ? '今月のお知らせはまだありません'
+        : currentPeriod === 'last'
+          ? '先月のお知らせはありません'
+          : '該当するお知らせはありません';
+      $list.innerHTML = `<div class="empty">${msg}</div>`;
+      return;
+    }
+
+    $list.innerHTML = items.map(a => {
+      const cat = CATEGORY_MAP[a.category];
+      const unread = !isRead(a.id);
+      return `
+        <article class="card cat-${a.category} ${a.pinned ? 'pinned' : ''} ${unread ? 'unread' : ''}" data-id="${a.id}">
+          <div class="card-meta">
+            <div>
+              <span class="tag ${cat.cls}">${cat.label}</span>
+              ${a.pinned ? '<span class="pin-mark">重要</span>' : ''}
+            </div>
+            <span class="date">${formatDateShort(a.date)}</span>
+          </div>
+          <h2>${a.title}</h2>
+          <p class="excerpt">${a.excerpt}</p>
+          <div class="card-footer">
+            <span>${a.author}</span>
+            <span class="readmore">${unread ? '詳しく見る ›' : '再度読む ›'}</span>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function openModal(id) {
+    const a = ARTICLES.find(x => x.id === id);
+    if (!a) return;
+    const cat = CATEGORY_MAP[a.category];
+    $modalBody.innerHTML = `
+      <div class="meta-row">
+        <span class="tag ${cat.cls}">${cat.label}</span>
+        ${a.pinned ? '<span class="pin-mark">重要</span>' : ''}
+        <span class="date" style="margin-left:auto">${formatDate(a.date)}</span>
+      </div>
+      <h2>${a.title}</h2>
+      <div class="author">投稿: ${a.author}</div>
+      <div class="body">${a.body}</div>
+    `;
+    $modal.classList.add('show');
+    $modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+
+    if (markRead(id)) {
+      // モーダルを閉じた後に反映するので、ここでは再描画しなくても見た目は維持される
+      // （閉じるときにrender()を呼ぶ）
+    }
+  }
+
+  function closeModal() {
+    $modal.classList.remove('show');
+    $modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    render();
+  }
+
+  // イベント
+  $periodTabs.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-period]');
+    if (!btn) return;
+    currentPeriod = btn.dataset.period;
+    $periodTabs.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+    render();
+  });
+
+  $filter.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-cat]');
+    if (!btn) return;
+    currentCategory = btn.dataset.cat;
+    $filter.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+    render();
+  });
+
+  $list.addEventListener('click', (e) => {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    openModal(Number(card.dataset.id));
+  });
+
+  $modalClose.addEventListener('click', closeModal);
+  $modal.addEventListener('click', (e) => {
+    if (e.target === $modal) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $modal.classList.contains('show')) closeModal();
+  });
+
+  renderToday();
+  render();
+
+  // --- PWA: Service Worker 登録 ---
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+
+  // --- インストールバナー ---
+  const $banner = document.getElementById('installBanner');
+  const $installBtn = document.getElementById('installBtn');
+  const $installDismiss = document.getElementById('installDismiss');
+  let deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!localStorage.getItem('install-dismissed')) {
+      $banner.classList.add('show');
+    }
+  });
+
+  $installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    $banner.classList.remove('show');
+  });
+
+  $installDismiss.addEventListener('click', () => {
+    $banner.classList.remove('show');
+    localStorage.setItem('install-dismissed', '1');
+  });
+</script>
+</body>
+</html>

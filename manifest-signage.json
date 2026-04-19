@@ -1,0 +1,32 @@
+{
+  "name": "◯◯◯システム お知らせ掲示板（サイネージ）",
+  "short_name": "掲示板サイネージ",
+  "description": "工場壁掛けタブレット・モニター用サイネージ表示",
+  "start_url": "./signage.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1d4ed8",
+  "theme_color": "#1d4ed8",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

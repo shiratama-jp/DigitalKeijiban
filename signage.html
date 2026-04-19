@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1d4ed8">
+<link rel="manifest" href="manifest-signage.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>◯◯◯システム　お知らせ掲示板（サイネージ）</title>
+<style>
+  :root {
+    --blue-900: #1e3a8a;
+    --blue-700: #1d4ed8;
+    --blue-600: #2563eb;
+    --blue-500: #3b82f6;
+    --blue-100: #dbeafe;
+    --blue-50:  #eff6ff;
+    --ink:      #0f172a;
+    --ink-soft: #475569;
+    --ink-mute: #94a3b8;
+    --bg:       #f5f8fd;
+    --card:     #ffffff;
+    --border:   #e2e8f0;
+    --cat-safety: #ea580c;
+    --cat-safety-bg: #fff1e6;
+    --cat-event: #16a34a;
+    --cat-event-bg: #e7f7ec;
+    --cat-general: #0891b2;
+    --cat-general-bg: #e0f5fa;
+    --cat-people: #9333ea;
+    --cat-people-bg: #f3e8ff;
+    --cat-notice: #2563eb;
+    --cat-notice-bg: #e0ecff;
+    --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 10px 28px rgba(15, 23, 42, 0.10);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans",
+                 "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
+
+  /* ===== Header ===== */
+  header.top {
+    background: linear-gradient(135deg, var(--blue-700), var(--blue-900));
+    color: #fff;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 24px;
+    padding: 14px 28px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo .glyph {
+    width: clamp(32px, 2.6vw, 48px);
+    height: clamp(32px, 2.6vw, 48px);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    font-size: clamp(16px, 1.4vw, 24px);
+    letter-spacing: -0.05em;
+  }
+  .logo-text {
+    line-height: 1.15;
+  }
+  .logo-text .brand {
+    font-size: clamp(14px, 1.3vw, 22px);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    opacity: 0.95;
+  }
+  .logo-text .site {
+    font-size: clamp(12px, 1.0vw, 16px);
+    opacity: 0.75;
+    letter-spacing: 0.05em;
+  }
+
+  .date-block {
+    text-align: center;
+    line-height: 1.15;
+  }
+  .date-block .ymd {
+    font-size: clamp(18px, 1.8vw, 32px);
+    font-weight: 700;
+  }
+  .date-block .wareki {
+    font-size: clamp(12px, 1.0vw, 18px);
+    opacity: 0.75;
+    margin-top: 2px;
+    letter-spacing: 0.08em;
+  }
+
+  .clock {
+    font-size: clamp(44px, 5.5vw, 84px);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .clock .sep {
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.25; } }
+
+  /* ===== Main layout (主役+脇役) ===== */
+  main.stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    gap: 18px;
+    padding: 18px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* --- Hero (主役) --- */
+  .hero {
+    position: relative;
+    background: var(--card);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    padding: clamp(20px, 2.2vw, 42px);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 18px;
+    overflow: hidden;
+    background-repeat: no-repeat;
+    background-position: right -30px center;
+    background-size: auto 85%;
+    cursor: pointer;
+    transition: opacity 0.25s;
+  }
+  .hero.fade { opacity: 0; }
+
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .hero .tag {
+    font-size: clamp(14px, 1.2vw, 22px);
+    font-weight: 700;
+    padding: 6px 18px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+  }
+  .hero .pin-mark {
+    font-size: clamp(13px, 1.1vw, 20px);
+    font-weight: 800;
+    color: #fff;
+    background: var(--blue-600);
+    padding: 4px 14px;
+    border-radius: 6px;
+    letter-spacing: 0.06em;
+  }
+  .hero .date-big {
+    margin-left: auto;
+    font-size: clamp(16px, 1.5vw, 28px);
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+  .hero-main {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(30px, 3.8vw, 64px);
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--ink);
+  }
+  .hero-body {
+    flex: 1;
+    min-height: 0;
+    font-size: clamp(16px, 1.5vw, 26px);
+    line-height: 1.8;
+    color: var(--ink-soft);
+    white-space: pre-wrap;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* 溢れたときだけフェードマスクと「タップで全文」ヒントを出す */
+  .hero.is-clipped .hero-body {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 70px), transparent);
+            mask-image: linear-gradient(to bottom, #000 calc(100% - 70px), transparent);
+  }
+  .clip-hint {
+    display: none;
+    position: absolute;
+    right: 6px;
+    bottom: 2px;
+    font-size: clamp(12px, 1.0vw, 18px);
+    font-weight: 700;
+    color: var(--blue-700);
+    background: rgba(255, 255, 255, 0.92);
+    padding: 6px 14px;
+    border-radius: 999px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--blue-100);
+    pointer-events: none;
+  }
+  .hero.is-clipped .clip-hint {
+    display: inline-block;
+  }
+  .hero-footer {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+  }
+
+  .countdown {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    font-size: clamp(13px, 1.1vw, 18px);
+    color: var(--ink-mute);
+  }
+  .countdown .bar {
+    height: 6px;
+    background: var(--blue-50);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .countdown .bar > span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue-500), var(--blue-700));
+    border-radius: 3px;
+    transition: width 0.95s linear;
+  }
+  .countdown .rem {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--ink-soft);
+    min-width: 3em;
+    text-align: right;
+  }
+
+  .hold-btn {
+    background: var(--blue-600);
+    color: #fff;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-size: clamp(14px, 1.2vw, 20px);
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .hold-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* --- Side column (脇役: 全記事スクロール) --- */
+  .side-wrap {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+  .side {
+    height: 100%;
+    overflow-y: auto;
+    padding: 2px 8px 2px 2px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    scroll-behavior: smooth;
+  }
+  .side::-webkit-scrollbar { width: 8px; }
+  .side::-webkit-scrollbar-track { background: transparent; }
+  .side::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+  .side::-webkit-scrollbar-thumb:hover { background: var(--ink-mute); }
+
+  /* 上下フェードマスク */
+  .side-wrap::before,
+  .side-wrap::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 48px;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .side-wrap::before {
+    top: 0;
+    background: linear-gradient(to bottom, var(--bg) 10%, rgba(245, 248, 253, 0));
+  }
+  .side-wrap::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--bg) 10%, rgba(245, 248, 253, 0));
+  }
+  .side-wrap.can-up::before  { opacity: 1; }
+  .side-wrap.can-down::after { opacity: 1; }
+
+  /* 上下スクロールボタン */
+  .scroll-btn {
+    position: absolute;
+    right: 14px;
+    width: clamp(40px, 3vw, 54px);
+    height: clamp(40px, 3vw, 54px);
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--blue-700);
+    font-size: clamp(16px, 1.4vw, 22px);
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    z-index: 3;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.12s;
+    font-family: inherit;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+  }
+  .scroll-btn:active { transform: scale(0.94); }
+  .scroll-btn.up   { top: 14px; }
+  .scroll-btn.down { bottom: 14px; }
+  .side-wrap.can-up   .scroll-btn.up,
+  .side-wrap.can-down .scroll-btn.down {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .side-card {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(12px, 1.2vw, 20px) clamp(14px, 1.4vw, 24px);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+    background-repeat: no-repeat;
+    background-position: right -14px center;
+    background-size: auto 96%;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    margin-bottom: 14px;
+  }
+  .side-card:last-child { margin-bottom: 0; }
+  .side-card:active {
+    transform: scale(0.99);
+    box-shadow: var(--shadow-md);
+  }
+  .side-card .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .side-card .tag {
+    font-size: clamp(11px, 0.9vw, 16px);
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+  }
+  .side-card .date-s {
+    margin-left: auto;
+    font-size: clamp(11px, 0.9vw, 15px);
+    color: var(--ink-mute);
+    font-weight: 600;
+  }
+  .side-card h3 {
+    margin: 0;
+    font-size: clamp(14px, 1.3vw, 22px);
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--ink);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .side-card .excerpt-s {
+    font-size: clamp(13px, 1.25vw, 20px);
+    color: var(--ink-soft);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* カテゴリ別シルエット（hero & side共通） */
+  .hero.cat-safety, .side-card.cat-safety  { background-image: var(--sil-safety);  }
+  .hero.cat-event,  .side-card.cat-event   { background-image: var(--sil-event);   }
+  .hero.cat-general,.side-card.cat-general { background-image: var(--sil-general); }
+  .hero.cat-people, .side-card.cat-people  { background-image: var(--sil-people);  }
+  .hero.cat-notice, .side-card.cat-notice  { background-image: var(--sil-notice);  }
+
+  .tag.safety  { color: var(--cat-safety);  background: var(--cat-safety-bg); }
+  .tag.event   { color: var(--cat-event);   background: var(--cat-event-bg); }
+  .tag.general { color: var(--cat-general); background: var(--cat-general-bg); }
+  .tag.people  { color: var(--cat-people);  background: var(--cat-people-bg); }
+  .tag.notice  { color: var(--cat-notice);  background: var(--cat-notice-bg); }
+
+  /* ===== Modal (全文表示) ===== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    z-index: 100;
+    animation: fadeIn 0.15s;
+  }
+  .modal-backdrop.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: #fff;
+    border-radius: 24px;
+    max-width: 1100px;
+    width: 92%;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: clamp(28px, 3vw, 56px);
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.4);
+    position: relative;
+  }
+  .modal .close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: var(--bg);
+    border: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-family: inherit;
+  }
+  .modal .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .modal .tag {
+    font-size: clamp(14px, 1.2vw, 22px);
+    font-weight: 700;
+    padding: 6px 18px;
+    border-radius: 999px;
+  }
+  .modal h1 {
+    margin: 0 0 12px;
+    font-size: clamp(26px, 3vw, 46px);
+    font-weight: 800;
+    line-height: 1.3;
+  }
+  .modal .author {
+    font-size: clamp(13px, 1.1vw, 18px);
+    color: var(--ink-mute);
+    margin-bottom: 24px;
+  }
+  .modal .body {
+    font-size: clamp(15px, 1.4vw, 24px);
+    line-height: 1.9;
+    white-space: pre-wrap;
+    color: var(--ink);
+  }
+  .modal .hint {
+    margin-top: 30px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--border);
+    color: var(--ink-mute);
+    font-size: clamp(12px, 1vw, 16px);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo">
+    <div class="glyph">◯</div>
+    <div class="logo-text">
+      <div class="brand">◯◯◯SYSTEMS</div>
+      <div class="site">◯◯工場 お知らせ掲示板</div>
+    </div>
+  </div>
+  <div class="date-block">
+    <div class="ymd" id="dateYmd">-</div>
+    <div class="wareki" id="dateWareki">-</div>
+  </div>
+  <div class="clock" id="clock">
+    <span id="clockH">--</span><span class="sep">:</span><span id="clockM">--</span>
+  </div>
+</header>
+
+<main class="stage">
+  <article class="hero" id="hero">
+    <div class="hero-meta" id="heroMeta"></div>
+    <div class="hero-main">
+      <h1 id="heroTitle"></h1>
+      <div class="hero-body" id="heroBody">
+        <div id="heroBodyText"></div>
+        <span class="clip-hint">タップで全文 ›</span>
+      </div>
+    </div>
+    <div class="hero-footer">
+      <div class="countdown">
+        <span>次の記事まで</span>
+        <div class="bar"><span id="progressBar"></span></div>
+        <span class="rem" id="progressText">00:30</span>
+      </div>
+      <button class="hold-btn" id="holdBtn">しばらく表示しておく</button>
+    </div>
+  </article>
+
+  <div class="side-wrap" id="sideWrap">
+    <button class="scroll-btn up" id="scrollUp" aria-label="上へ">▲</button>
+    <div class="side" id="side"></div>
+    <button class="scroll-btn down" id="scrollDown" aria-label="下へ">▼</button>
+  </div>
+</main>
+
+<div class="modal-backdrop" id="modal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="close-btn" id="modalClose">×</button>
+    <div id="modalContent"></div>
+    <div class="hint">閉じると自動切替を再開します</div>
+  </div>
+</div>
+
+<script src="articles.js"></script>
+<script>
+  injectSilhouettes();
+
+  // --- 設定 ---
+  const ROT_SECONDS = 30;   // 1記事の表示時間
+
+  // --- DOM ---
+  const $hero = document.getElementById('hero');
+  const $heroMeta = document.getElementById('heroMeta');
+  const $heroTitle = document.getElementById('heroTitle');
+  const $heroBody = document.getElementById('heroBody');
+  const $heroBodyText = document.getElementById('heroBodyText');
+  const $side = document.getElementById('side');
+  const $sideWrap = document.getElementById('sideWrap');
+  const $scrollUp = document.getElementById('scrollUp');
+  const $scrollDown = document.getElementById('scrollDown');
+  const $progressBar = document.getElementById('progressBar');
+  const $progressText = document.getElementById('progressText');
+  const $holdBtn = document.getElementById('holdBtn');
+  const $modal = document.getElementById('modal');
+  const $modalContent = document.getElementById('modalContent');
+  const $modalClose = document.getElementById('modalClose');
+
+  // --- 記事並び（ピン留め→日付新しい順） ---
+  const ordered = [...ARTICLES].sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    return b.date.localeCompare(a.date);
+  });
+
+  let heroIdx = 0;
+  let remaining = ROT_SECONDS;
+  let paused = false;
+
+  // --- 時計と日付 ---
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('clockH').textContent = h;
+    document.getElementById('clockM').textContent = m;
+
+    const weekdays = ['日','月','火','水','木','金','土'];
+    const ymd = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${weekdays[now.getDay()]}）`;
+    document.getElementById('dateYmd').textContent = ymd;
+
+    const reiwa = now.getFullYear() - 2018;
+    document.getElementById('dateWareki').textContent = `令和${reiwa}年`;
+  }
+
+  // --- フォーマッタ ---
+  function formatDateJP(iso) {
+    const d = new Date(iso);
+    const wd = ['日','月','火','水','木','金','土'][d.getDay()];
+    return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日(${wd})`;
+  }
+  function formatDateShort(iso) {
+    const d = new Date(iso);
+    return `${d.getMonth()+1}/${d.getDate()}`;
+  }
+
+  // --- レンダリング ---
+  function render() {
+    const hero = ordered[heroIdx];
+    const sides = ordered.filter((_, i) => i !== heroIdx);
+
+    // Hero
+    $hero.className = 'hero cat-' + hero.category;
+    const catH = CATEGORY_MAP[hero.category];
+    $heroMeta.innerHTML = `
+      <span class="tag ${catH.cls}">${catH.label}</span>
+      ${hero.pinned ? '<span class="pin-mark">重要</span>' : ''}
+      <span class="date-big">${formatDateJP(hero.date)}　投稿: ${hero.author}</span>
+    `;
+    $heroTitle.textContent = hero.title;
+    $heroBodyText.textContent = hero.body;
+
+    // 溢れ判定（レイアウト確定後）
+    requestAnimationFrame(() => {
+      const clipped = $heroBody.scrollHeight > $heroBody.clientHeight + 1;
+      $hero.classList.toggle('is-clipped', clipped);
+    });
+
+    // Sides (現在の主役を除く全件)
+    $side.innerHTML = sides.map(a => {
+      const cat = CATEGORY_MAP[a.category];
+      return `
+        <article class="side-card cat-${a.category}" data-id="${a.id}">
+          <div class="meta-row">
+            <span class="tag ${cat.cls}">${cat.label}</span>
+            <span class="date-s">${formatDateShort(a.date)}</span>
+          </div>
+          <h3>${a.title}</h3>
+          <div class="excerpt-s">${a.excerpt}</div>
+        </article>
+      `;
+    }).join('');
+
+    requestAnimationFrame(updateSideScrollHints);
+  }
+
+  function updateSideScrollHints() {
+    const el = $side;
+    const canUp = el.scrollTop > 4;
+    const canDown = el.scrollTop + el.clientHeight < el.scrollHeight - 4;
+    $sideWrap.classList.toggle('can-up', canUp);
+    $sideWrap.classList.toggle('can-down', canDown);
+  }
+
+  function transitionHero(nextIdx) {
+    $hero.classList.add('fade');
+    setTimeout(() => {
+      heroIdx = nextIdx;
+      remaining = ROT_SECONDS;
+      render();
+      updateProgress();
+      $hero.classList.remove('fade');
+    }, 260);
+  }
+
+  function advanceHero() {
+    transitionHero((heroIdx + 1) % ordered.length);
+  }
+
+  function resetCountdown() {
+    remaining = ROT_SECONDS;
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const ratio = Math.max(0, remaining) / ROT_SECONDS;
+    $progressBar.style.width = `${ratio * 100}%`;
+    const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const ss = String(remaining % 60).padStart(2, '0');
+    $progressText.textContent = `${mm}:${ss}`;
+  }
+
+  function tick() {
+    if (paused) return;
+    remaining -= 1;
+    if (remaining <= 0) {
+      advanceHero();
+      return;
+    }
+    updateProgress();
+  }
+
+  // --- モーダル ---
+  function openModal(article) {
+    paused = true;
+    const cat = CATEGORY_MAP[article.category];
+    $modalContent.innerHTML = `
+      <div class="meta-row">
+        <span class="tag ${cat.cls}">${cat.label}</span>
+        ${article.pinned ? '<span class="pin-mark" style="color:#fff;background:var(--blue-600);padding:4px 14px;border-radius:6px;font-weight:800;letter-spacing:0.06em;">重要</span>' : ''}
+        <span style="margin-left:auto;color:var(--ink-soft);font-weight:600;">${formatDateJP(article.date)}</span>
+      </div>
+      <h1>${article.title}</h1>
+      <div class="author">投稿: ${article.author}</div>
+      <div class="body">${article.body}</div>
+    `;
+    $modal.classList.add('show');
+    $modal.setAttribute('aria-hidden', 'false');
+  }
+  function closeModal() {
+    $modal.classList.remove('show');
+    $modal.setAttribute('aria-hidden', 'true');
+    paused = false;
+    resetCountdown();
+  }
+
+  // --- イベント ---
+  $holdBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    resetCountdown();
+  });
+
+  $hero.addEventListener('click', () => {
+    openModal(ordered[heroIdx]);
+  });
+
+  $side.addEventListener('click', (e) => {
+    const card = e.target.closest('.side-card');
+    if (!card) return;
+    const id = Number(card.dataset.id);
+    const newIdx = ordered.findIndex(x => x.id === id);
+    if (newIdx < 0) return;
+    transitionHero(newIdx);
+  });
+
+  $side.addEventListener('scroll', updateSideScrollHints, { passive: true });
+
+  function scrollSideByPage(direction) {
+    const step = Math.max(160, $side.clientHeight * 0.7) * direction;
+    $side.scrollBy({ top: step, behavior: 'smooth' });
+  }
+  $scrollUp.addEventListener('click', (e) => { e.stopPropagation(); scrollSideByPage(-1); });
+  $scrollDown.addEventListener('click', (e) => { e.stopPropagation(); scrollSideByPage(1); });
+
+  $modalClose.addEventListener('click', closeModal);
+  $modal.addEventListener('click', (e) => { if (e.target === $modal) closeModal(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $modal.classList.contains('show')) closeModal();
+  });
+
+  // --- 初期化 ---
+  updateClock();
+  setInterval(updateClock, 1000 * 30); // 30秒ごとに更新（HH:MM精度で十分）
+  // 分境界に合わせた即時更新
+  setTimeout(() => {
+    updateClock();
+    setInterval(updateClock, 60 * 1000);
+  }, (60 - new Date().getSeconds()) * 1000);
+
+  render();
+  updateProgress();
+  setInterval(tick, 1000);
+
+  // リサイズ時に溢れ判定と脇役のスクロール可否を再評価
+  let resizeT;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => {
+      const clipped = $heroBody.scrollHeight > $heroBody.clientHeight + 1;
+      $hero.classList.toggle('is-clipped', clipped);
+      updateSideScrollHints();
+    }, 200);
+  });
+
+  // --- PWA: Service Worker 登録 ---
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+
+  // --- サイネージらしく: 画面スリープ抑止（Wake Lock API対応ブラウザ） ---
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        await navigator.wakeLock.request('screen');
+      }
+    } catch {}
+  }
+  requestWakeLock();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') requestWakeLock();
+  });
+</script>
+</body>
+</html>
