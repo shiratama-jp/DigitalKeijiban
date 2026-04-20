@@ -126,7 +126,7 @@ function extractAuthor(email) {
 }
 
 // CSV行をArticleオブジェクトに変換
-function rowToArticle(row, headers, index) {
+function rowToArticle(row, headers, index, id) {
   const get = (...keys) => {
     for (const k of keys) {
       const i = headers.indexOf(k);
@@ -154,7 +154,7 @@ function rowToArticle(row, headers, index) {
   const excerpt = bodyFlat.length > 80 ? bodyFlat.slice(0, 80) + '…' : bodyFlat;
 
   return {
-    id: index + 1,
+    id: id ?? (index + 1),
     category,
     title,
     date,
@@ -165,23 +165,133 @@ function rowToArticle(row, headers, index) {
   };
 }
 
-// --- 公開CSVから記事を読み込む ---
+// --- デモ用サンプル記事（提案時の「中身が入ってる感」を維持するため常に表示） ---
+const DEMO_ARTICLES = [
+  {
+    id: 1,
+    category: 'safety',
+    title: '4月は全国安全月間です',
+    date: '2026-04-01',
+    author: '安全衛生委員会',
+    pinned: true,
+    excerpt: '今月は全社で安全意識を高める強化月間です。朝礼でのKY活動、保護具の再確認、ヒヤリハット報告の徹底にご協力ください。',
+    body: `今月は全社で安全意識を高める強化月間です。\n\n【重点項目】\n・朝礼でのKY（危険予知）活動の実施\n・保護具（ヘルメット・安全靴・保護メガネ）の着用状態再確認\n・ヒヤリハット報告の積極提出\n\n「慣れ」から来る不注意が最も多い事故原因です。毎朝の声掛けと指差し確認を徹底し、全員で無事故・無災害を達成しましょう。\n\nご不明な点は安全衛生委員会までお問い合わせください。`
+  },
+  {
+    id: 2,
+    category: 'event',
+    title: '春の社内BBQ大会を開催します',
+    date: '2026-04-18',
+    author: '親睦会',
+    pinned: false,
+    excerpt: '今年も恒例の春BBQを開催します。ご家族のご参加も大歓迎です。参加希望の方は4/25までに総務までお申し込みください。',
+    body: `今年も恒例の春BBQ大会を開催します！\n\n【日時】5月17日(日) 11:00〜15:00\n【場所】◯◯河川敷 第3バーベキュー広場\n【会費】大人 2,000円 / 子ども 500円\n\nご家族のご参加も大歓迎です。ビンゴ大会・子ども向けゲーム・豪華景品もご用意しています。\n\n参加希望の方は4/25(金)までに総務 田中までお申し込みください。雨天の場合は翌週日曜に順延します。`
+  },
+  {
+    id: 3,
+    category: 'general',
+    title: '定期健康診断の受付開始',
+    date: '2026-04-15',
+    author: '総務部',
+    pinned: false,
+    excerpt: '今年度の定期健康診断の受付を開始しました。所属と希望日を確認のうえ、5/9までに予約システムから申し込みをお願いします。',
+    body: `今年度の定期健康診断の受付を開始しました。\n\n【実施期間】6月1日〜6月26日\n【実施場所】第2会議室（巡回健診車）\n【対象】全正社員・契約社員\n\n所属ごとに希望可能な曜日が異なります。社内ポータルの予約システムより、5/9(金) 17:00までにお申し込みをお願いします。\n\n※バリウム検査を希望する方は前日21時以降の絶食が必要です。\n※婦人科検診はオプション申し込みとなります。`
+  },
+  {
+    id: 4,
+    category: 'people',
+    title: '新入社員の紹介（2026年度）',
+    date: '2026-04-08',
+    author: '人事部',
+    pinned: false,
+    excerpt: '本年度、新たに8名の仲間が加わりました。配属先は製造部・品質管理部・システム部です。見かけたらぜひお声がけください。',
+    body: `本年度、新たに8名の仲間が加わりました。\n\n【配属先】\n・製造部 第1課　3名\n・製造部 第2課　2名\n・品質管理部　　2名\n・システム部　　1名\n\n現在、各部署でOJT研修を受けています。構内で見かけたらぜひお声がけください。温かく迎えていただけると嬉しいです。\n\n配属メンバーの詳細な自己紹介は、社内報「こんにちは新人さん」特集号（5月号）に掲載予定です。`
+  },
+  {
+    id: 5,
+    category: 'notice',
+    title: '駐車場の利用ルール変更について',
+    date: '2026-04-12',
+    author: '総務部',
+    pinned: false,
+    excerpt: '5/1より、第2駐車場の区画割を変更します。新しい区画表は掲示板および社内ポータルで公開していますのでご確認ください。',
+    body: `5月1日より、第2駐車場の区画割を変更します。\n\n【変更の背景】\n来客用スペースの拡充と、大型車両の動線改善のため、全体レイアウトを見直しました。\n\n【変更点】\n・一般社員区画：従来の1列目→3列目へ移動\n・来客区画：入口側2列を確保\n・大型車両区画：西側奥に集約\n\n新しい区画表は本掲示板および社内ポータル「お知らせ」欄に掲載しています。ご自身の新しい駐車位置を必ずご確認ください。\n\n初日は誘導係を配置します。ご不便をおかけしますがご協力をお願いします。`
+  },
+  {
+    id: 6,
+    category: 'event',
+    title: 'お花見会のご報告',
+    date: '2026-03-30',
+    author: '親睦会',
+    pinned: false,
+    excerpt: '3/28に開催したお花見会は天候にも恵まれ、総勢52名の大盛況となりました。ご参加・ご協力ありがとうございました。',
+    body: `3/28(土)に◯◯公園で開催したお花見会は、総勢52名の大盛況となりました。\n\n当日はお天気にも恵まれ、桜も満開のタイミング。お子様連れのご家族も多く、和やかなひとときを過ごせました。\n\n準備・片付けにご協力いただいた有志のみなさま、本当にありがとうございました。写真は社内ポータルのアルバムに順次アップしていきます。`
+  },
+  {
+    id: 7,
+    category: 'general',
+    title: '年度末の勤務報告書提出について',
+    date: '2026-03-20',
+    author: '総務部',
+    pinned: false,
+    excerpt: '2025年度の勤務報告書を4/10までにご提出ください。書式は社内ポータルの様式集からダウンロードできます。',
+    body: `2025年度の勤務報告書の提出期限が近づいています。\n\n【提出期限】4月10日(金) 17:00\n【提出先】総務部（メールまたは紙）\n【書式】社内ポータル＞様式集＞「2025年度 勤務報告書」\n\n有給残日数の確認もあわせてお願いします。ご不明な点は総務 田中までお問い合わせください。`
+  },
+  {
+    id: 8,
+    category: 'notice',
+    title: '春の交通安全運動（3/10-3/20）',
+    date: '2026-03-08',
+    author: '安全衛生委員会',
+    pinned: false,
+    excerpt: '春の全国交通安全運動の期間中、通勤時の安全運転を改めてお願いします。通勤経路の見直しも忘れずに。',
+    body: `3月10日〜3月20日は春の全国交通安全運動期間です。\n\n新生活が始まる時期は交通事故が増えやすくなります。\n\n【お願い】\n・朝夕のスピードに余裕を\n・スマホながら運転は絶対に\n・自転車通勤の方はヘルメット着用を\n\n事故やヒヤリハットがあった場合は、軽微でも必ず安全衛生委員会までご報告ください。`
+  },
+  {
+    id: 9,
+    category: 'people',
+    title: '社員表彰式を開催しました（2月）',
+    date: '2026-02-18',
+    author: '人事部',
+    pinned: false,
+    excerpt: '2/15に2025年度下期の社員表彰式を開催しました。改善提案部門・安全功労部門・永年勤続表彰の受賞者をご紹介します。',
+    body: `2月15日に2025年度下期の社員表彰式を開催しました。\n\n【改善提案部門】製造部 佐藤さん、品質管理部 鈴木さん\n【安全功労部門】製造部 山田さん\n【永年勤続表彰（20年）】総務部 高橋さん\n\n受賞されたみなさま、おめでとうございます。日々の業務の中での気づきや工夫が、会社全体の成長につながっています。`
+  },
+  {
+    id: 10,
+    category: 'general',
+    title: 'インフルエンザ予防接種費用補助のお知らせ（終了）',
+    date: '2026-01-15',
+    author: '総務部',
+    pinned: false,
+    excerpt: '2025年度のインフルエンザ予防接種費用補助（上限3,000円）は、1/31をもって受付を終了しました。',
+    body: `2025年度のインフルエンザ予防接種費用補助は、1月31日をもって受付を終了しました。\n\n【利用実績】対象者の約78%が申請（前年比+12pt）\n\nご利用ありがとうございました。2026年度の補助内容は秋頃あらためてご案内いたします。`
+  }
+];
+
+// --- 公開CSVから記事を読み込む（取得失敗してもデモ記事は表示） ---
 async function loadArticles() {
   // キャッシュバスティング: 更新が反映されやすいように
   const url = `${ARTICLES_CSV_URL}&_=${Date.now()}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`CSV取得失敗: HTTP ${res.status}`);
-  const text = await res.text();
 
-  const rows = parseCSV(text);
-  if (rows.length < 2) return []; // ヘッダーのみ or 空
+  let csvArticles = [];
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
 
-  const headers = rows[0].map(h => h.trim());
-  const dataRows = rows.slice(1);
+    const rows = parseCSV(text);
+    if (rows.length >= 2) {
+      const headers = rows[0].map(h => h.trim());
+      const dataRows = rows.slice(1);
+      csvArticles = dataRows
+        .map((row, i) => rowToArticle(row, headers, i, 1000 + i + 1)) // IDは 1001 以降
+        .filter(a => a !== null);
+    }
+  } catch (err) {
+    console.warn('CSV取得に失敗、デモ記事のみで表示します:', err);
+  }
 
-  const articles = dataRows
-    .map((row, i) => rowToArticle(row, headers, i))
-    .filter(a => a !== null);
-
-  return articles;
+  // CSV投稿 + デモ記事 を合わせて返す（並びは呼び出し側の sort に任せる）
+  return [...csvArticles, ...DEMO_ARTICLES];
 }
