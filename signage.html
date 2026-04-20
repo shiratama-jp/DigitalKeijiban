@@ -642,10 +642,15 @@
   const $modalClose = document.getElementById('modalClose');
 
   // --- 記事並び（ピン留め→日付新しい順） ---
-  const ordered = [...ARTICLES].sort((a, b) => {
-    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    return b.date.localeCompare(a.date);
-  });
+  let ARTICLES = [];
+  let ordered = [];
+
+  function rebuildOrdered() {
+    ordered = [...ARTICLES].sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      return b.date.localeCompare(a.date);
+    });
+  }
 
   let heroIdx = 0;
   let remaining = ROT_SECONDS;
@@ -824,16 +829,35 @@
 
   // --- 初期化 ---
   updateClock();
-  setInterval(updateClock, 1000 * 30); // 30秒ごとに更新（HH:MM精度で十分）
-  // 分境界に合わせた即時更新
+  setInterval(updateClock, 1000 * 30);
   setTimeout(() => {
     updateClock();
     setInterval(updateClock, 60 * 1000);
   }, (60 - new Date().getSeconds()) * 1000);
 
-  render();
-  updateProgress();
-  setInterval(tick, 1000);
+  // 公開CSVから記事を取得してからローテーション開始
+  (async function initArticles() {
+    $heroTitle.textContent = '記事を読み込み中…';
+    $heroBodyText.textContent = '';
+    $heroMeta.innerHTML = '';
+    try {
+      ARTICLES = await loadArticles();
+      if (ARTICLES.length === 0) {
+        $heroTitle.textContent = 'お知らせはまだありません';
+        $heroBodyText.textContent = 'Google Formから投稿が入ると、この画面に表示されます。';
+        return;
+      }
+      rebuildOrdered();
+      heroIdx = 0;
+      render();
+      updateProgress();
+      setInterval(tick, 1000);
+    } catch (err) {
+      console.error('記事取得エラー:', err);
+      $heroTitle.textContent = '記事の取得に失敗しました';
+      $heroBodyText.textContent = err.message;
+    }
+  })();
 
   // リサイズ時に溢れ判定と脇役のスクロール可否を再評価
   let resizeT;

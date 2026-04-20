@@ -530,6 +530,9 @@
 <script>
   injectSilhouettes();
 
+  // --- 記事データ（loadArticles で公開CSVから取得して詰め替える） ---
+  let ARTICLES = [];
+
   // --- 表示ロジック ---
   const $list = document.getElementById('cardList');
   const $filter = document.getElementById('filter');
@@ -708,8 +711,18 @@
     if (e.key === 'Escape' && $modal.classList.contains('show')) closeModal();
   });
 
-  renderToday();
-  render();
+  // --- 初回ロード（公開CSVから記事取得） ---
+  (async function initArticles() {
+    renderToday();
+    $list.innerHTML = '<div class="empty">記事を読み込み中…</div>';
+    try {
+      ARTICLES = await loadArticles();
+      render();
+    } catch (err) {
+      console.error('記事取得エラー:', err);
+      $list.innerHTML = `<div class="empty">記事の取得に失敗しました<br><small style="color:var(--ink-mute)">${err.message}</small></div>`;
+    }
+  })();
 
   // --- PWA: Service Worker 登録 ---
   if ('serviceWorker' in navigator) {
