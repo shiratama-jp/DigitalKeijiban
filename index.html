@@ -71,6 +71,16 @@
     margin-bottom: 2px;
   }
 
+  .app-header .app-version {
+    display: inline-block;
+    font-size: 10px;
+    opacity: 0.55;
+    letter-spacing: 0.04em;
+    margin-left: 8px;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    vertical-align: middle;
+  }
+
   .app-header h1 {
     font-size: 20px;
     margin: 0;
@@ -519,7 +529,7 @@
 <body>
 
 <header class="app-header">
-  <div class="brand">◯◯◯システム</div>
+  <div class="brand">◯◯◯システム<span class="app-version" id="appVersion"></span></div>
   <h1>お知らせ掲示板</h1>
   <div class="sub" id="today"></div>
 </header>
@@ -571,6 +581,7 @@
 <script src="articles.js"></script>
 <script>
   injectSilhouettes();
+  document.getElementById('appVersion').textContent = APP_VERSION;
 
   // --- 記事データ（loadArticles で公開CSVから取得して詰め替える） ---
   let ARTICLES = [];

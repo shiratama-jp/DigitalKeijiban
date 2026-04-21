@@ -1,6 +1,9 @@
 // 共有データ: スマホ用(index.html)とサイネージ用(signage.html)の両方から読み込む
 // フェーズ2実装: Google Form → スプレッドシート → 公開CSV → PWA
 
+// バージョン表記: 年月日-マイナー.パッチ
+const APP_VERSION = 'Ver.260421-1.00';
+
 const ARTICLES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiWsJ69k3uN8hsV9UvohQ-gmj7pNjuGiT6mQpWwlT8GhhX6tTSlYBkVD1Ay5Gx6_I-RHDQFn9X23Im/pub?gid=533520323&single=true&output=csv';
 
 const CATEGORY_MAP = {

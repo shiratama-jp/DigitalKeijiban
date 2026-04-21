@@ -129,6 +129,14 @@
     opacity: 0.75;
     letter-spacing: 0.05em;
   }
+  .logo-text .app-version {
+    display: block;
+    font-size: clamp(9px, 0.7vw, 12px);
+    opacity: 0.5;
+    letter-spacing: 0.04em;
+    margin-top: 3px;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  }
 
   .date-block {
     text-align: center;
@@ -624,6 +632,7 @@
     <div class="logo-text">
       <div class="brand">◯◯◯SYSTEMS</div>
       <div class="site">◯◯工場 お知らせ掲示板</div>
+      <div class="app-version" id="appVersion"></div>
     </div>
   </div>
   <div class="qr-block">
@@ -685,6 +694,7 @@
 <script src="articles.js"></script>
 <script>
   injectSilhouettes();
+  document.getElementById('appVersion').textContent = APP_VERSION;
 
   // --- 設定 ---
   const ROT_SECONDS = 30;   // 1記事の表示時間
