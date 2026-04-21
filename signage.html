@@ -767,14 +767,16 @@
     $heroBodyText.textContent = hero.body;
 
     // 画像（あれば主役右側にサイドパネル表示）
-    const heroHasImage = hero.images && hero.images.length > 0;
-    $heroContentRow.classList.toggle('has-image', heroHasImage);
+    const heroHasImage = !!(hero.images && hero.images.length > 0);
     if (heroHasImage) {
-      $heroImage.src = hero.images[0];
+      $heroContentRow.classList.add('has-image');
       $heroImage.onerror = () => {
         $heroContentRow.classList.remove('has-image');
       };
+      $heroImage.src = hero.images[0];
     } else {
+      $heroContentRow.classList.remove('has-image');
+      $heroImage.onerror = null;
       $heroImage.removeAttribute('src');
     }
 
