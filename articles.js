@@ -125,6 +125,25 @@ function extractAuthor(email) {
   return local || '匿名';
 }
 
+// Google Drive の共有URLからファイルID抽出し、表示用URLに変換
+// Form添付は同セルに複数URLがカンマ区切りで入ることがある
+function extractImageUrls(raw, size = 1000) {
+  if (!raw) return [];
+  const urls = [];
+  // Form の出力URL例:
+  //   https://drive.google.com/open?id=XXXX
+  //   https://drive.google.com/file/d/XXXX/view
+  //   https://drive.google.com/uc?id=XXXX
+  const pattern = /(?:[?&]id=|\/d\/)([a-zA-Z0-9_-]{20,})/g;
+  let m;
+  while ((m = pattern.exec(raw)) !== null) {
+    const id = m[1];
+    // thumbnailエンドポイントは CORS/リダイレクトが素直で <img> と相性が良い
+    urls.push(`https://drive.google.com/thumbnail?id=${id}&sz=w${size}`);
+  }
+  return urls;
+}
+
 // CSV行をArticleオブジェクトに変換
 function rowToArticle(row, headers, index, id) {
   const get = (...keys) => {
@@ -142,6 +161,7 @@ function rowToArticle(row, headers, index, id) {
   const dateRaw = get('公開日', '日付') || get('タイムスタンプ');
   const email = get('メールアドレス', 'メール');
   const importantRaw = get('重要フラグ', '重要');
+  const attachmentRaw = get('添付画像', '画像', '添付');
 
   if (!title) return null; // タイトル空の行はスキップ
 
@@ -152,6 +172,7 @@ function rowToArticle(row, headers, index, id) {
 
   const bodyFlat = body.replace(/\s+/g, ' ').trim();
   const excerpt = bodyFlat.length > 80 ? bodyFlat.slice(0, 80) + '…' : bodyFlat;
+  const images = extractImageUrls(attachmentRaw);
 
   return {
     id: id ?? (index + 1),
@@ -161,7 +182,8 @@ function rowToArticle(row, headers, index, id) {
     author,
     pinned,
     excerpt,
-    body
+    body,
+    images
   };
 }
 

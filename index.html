@@ -305,6 +305,48 @@
     overflow: hidden;
   }
 
+  .card-thumb {
+    margin-top: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    background: var(--blue-50);
+    aspect-ratio: 16 / 9;
+    max-height: 180px;
+  }
+  .card-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.2s;
+  }
+  .card-thumb img.loading { opacity: 0; }
+  .card-thumb .count-badge {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    background: rgba(15, 23, 42, 0.7);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+
+  .modal-images {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 8px 0 16px;
+  }
+  .modal-images img {
+    width: 100%;
+    border-radius: 10px;
+    display: block;
+    background: var(--blue-50);
+  }
+
   .card-footer {
     display: flex;
     justify-content: space-between;
@@ -629,6 +671,14 @@
     $list.innerHTML = items.map(a => {
       const cat = CATEGORY_MAP[a.category];
       const unread = !isRead(a.id);
+      const hasImage = a.images && a.images.length > 0;
+      const thumb = hasImage
+        ? `<div class="card-thumb">
+             <img src="${a.images[0]}" alt="" loading="lazy" referrerpolicy="no-referrer"
+                  onerror="this.parentElement.style.display='none'">
+             ${a.images.length > 1 ? `<span class="count-badge">+${a.images.length - 1}</span>` : ''}
+           </div>`
+        : '';
       return `
         <article class="card cat-${a.category} ${a.pinned ? 'pinned' : ''} ${unread ? 'unread' : ''}" data-id="${a.id}">
           <div class="card-meta">
@@ -640,6 +690,7 @@
           </div>
           <h2>${a.title}</h2>
           <p class="excerpt">${a.excerpt}</p>
+          ${thumb}
           <div class="card-footer">
             <span>${a.author}</span>
             <span class="readmore">${unread ? '詳しく見る ›' : '再度読む ›'}</span>
@@ -653,6 +704,11 @@
     const a = ARTICLES.find(x => x.id === id);
     if (!a) return;
     const cat = CATEGORY_MAP[a.category];
+    const imagesHtml = (a.images && a.images.length > 0)
+      ? `<div class="modal-images">${
+          a.images.map(u => `<img src="${u}" alt="" loading="lazy" referrerpolicy="no-referrer">`).join('')
+        }</div>`
+      : '';
     $modalBody.innerHTML = `
       <div class="meta-row">
         <span class="tag ${cat.cls}">${cat.label}</span>
@@ -661,6 +717,7 @@
       </div>
       <h2>${a.title}</h2>
       <div class="author">投稿: ${a.author}</div>
+      ${imagesHtml}
       <div class="body">${a.body}</div>
     `;
     $modal.classList.add('show');

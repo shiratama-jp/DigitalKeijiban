@@ -234,6 +234,39 @@
     line-height: 1.25;
     color: var(--ink);
   }
+
+  /* 画像がない時は本文が全体を占める、ある時は本文+画像の2カラム */
+  .hero-content-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+    flex: 1;
+    min-height: 0;
+  }
+  .hero-content-row.has-image {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 42%);
+  }
+
+  .hero-image-wrap {
+    display: none;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--blue-50);
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  }
+  .hero-content-row.has-image .hero-image-wrap { display: flex; }
+  .hero-image-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
+
   .hero-body {
     flex: 1;
     min-height: 0;
@@ -464,6 +497,33 @@
     overflow: hidden;
   }
 
+  .side-card.has-thumb {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .side-card.has-thumb .side-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .side-card .thumb {
+    width: clamp(64px, 6vw, 96px);
+    height: clamp(64px, 6vw, 96px);
+    border-radius: 10px;
+    overflow: hidden;
+    flex: 0 0 auto;
+    background: var(--blue-50);
+  }
+  .side-card .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
   /* カテゴリ別シルエット（hero & side共通） */
   .hero.cat-safety, .side-card.cat-safety  { background-image: var(--sil-safety);  }
   .hero.cat-event,  .side-card.cat-event   { background-image: var(--sil-event);   }
@@ -587,9 +647,14 @@
     <div class="hero-meta" id="heroMeta"></div>
     <div class="hero-main">
       <h1 id="heroTitle"></h1>
-      <div class="hero-body" id="heroBody">
-        <div id="heroBodyText"></div>
-        <span class="clip-hint">タップで全文 ›</span>
+      <div class="hero-content-row" id="heroContentRow">
+        <div class="hero-body" id="heroBody">
+          <div id="heroBodyText"></div>
+          <span class="clip-hint">タップで全文 ›</span>
+        </div>
+        <div class="hero-image-wrap" id="heroImageWrap">
+          <img id="heroImage" alt="" referrerpolicy="no-referrer">
+        </div>
       </div>
     </div>
     <div class="hero-footer">
@@ -630,6 +695,8 @@
   const $heroTitle = document.getElementById('heroTitle');
   const $heroBody = document.getElementById('heroBody');
   const $heroBodyText = document.getElementById('heroBodyText');
+  const $heroContentRow = document.getElementById('heroContentRow');
+  const $heroImage = document.getElementById('heroImage');
   const $side = document.getElementById('side');
   const $sideWrap = document.getElementById('sideWrap');
   const $scrollUp = document.getElementById('scrollUp');
@@ -699,6 +766,18 @@
     $heroTitle.textContent = hero.title;
     $heroBodyText.textContent = hero.body;
 
+    // 画像（あれば主役右側にサイドパネル表示）
+    const heroHasImage = hero.images && hero.images.length > 0;
+    $heroContentRow.classList.toggle('has-image', heroHasImage);
+    if (heroHasImage) {
+      $heroImage.src = hero.images[0];
+      $heroImage.onerror = () => {
+        $heroContentRow.classList.remove('has-image');
+      };
+    } else {
+      $heroImage.removeAttribute('src');
+    }
+
     // 溢れ判定（レイアウト確定後）
     requestAnimationFrame(() => {
       const clipped = $heroBody.scrollHeight > $heroBody.clientHeight + 1;
@@ -708,14 +787,22 @@
     // Sides (現在の主役を除く全件)
     $side.innerHTML = sides.map(a => {
       const cat = CATEGORY_MAP[a.category];
+      const hasThumb = a.images && a.images.length > 0;
+      const thumb = hasThumb
+        ? `<div class="thumb"><img src="${a.images[0]}" alt="" loading="lazy" referrerpolicy="no-referrer"
+               onerror="this.parentElement.style.display='none'"></div>`
+        : '';
       return `
-        <article class="side-card cat-${a.category}" data-id="${a.id}">
-          <div class="meta-row">
-            <span class="tag ${cat.cls}">${cat.label}</span>
-            <span class="date-s">${formatDateShort(a.date)}</span>
+        <article class="side-card cat-${a.category} ${hasThumb ? 'has-thumb' : ''}" data-id="${a.id}">
+          <div class="side-card-body">
+            <div class="meta-row">
+              <span class="tag ${cat.cls}">${cat.label}</span>
+              <span class="date-s">${formatDateShort(a.date)}</span>
+            </div>
+            <h3>${a.title}</h3>
+            <div class="excerpt-s">${a.excerpt}</div>
           </div>
-          <h3>${a.title}</h3>
-          <div class="excerpt-s">${a.excerpt}</div>
+          ${thumb}
         </article>
       `;
     }).join('');
@@ -773,6 +860,12 @@
   function openModal(article) {
     paused = true;
     const cat = CATEGORY_MAP[article.category];
+    const imagesHtml = (article.images && article.images.length > 0)
+      ? `<div style="display:flex;flex-direction:column;gap:12px;margin:12px 0 20px;">${
+          article.images.map(u => `<img src="${u}" alt="" loading="lazy" referrerpolicy="no-referrer"
+            style="width:100%;border-radius:12px;display:block;background:var(--blue-50);">`).join('')
+        }</div>`
+      : '';
     $modalContent.innerHTML = `
       <div class="meta-row">
         <span class="tag ${cat.cls}">${cat.label}</span>
@@ -781,6 +874,7 @@
       </div>
       <h1>${article.title}</h1>
       <div class="author">投稿: ${article.author}</div>
+      ${imagesHtml}
       <div class="body">${article.body}</div>
     `;
     $modal.classList.add('show');
